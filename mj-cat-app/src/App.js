@@ -31,7 +31,6 @@ export default function DancingCat() {
     const [progress, setProgress] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
     const streamRef = useRef(null);
-    const intervalRef = useRef(null);
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
     const animationRef = useRef(null);
@@ -88,20 +87,34 @@ export default function DancingCat() {
                 if (response.ok) {
                     const result = await response.json();
                     setUploadStatus('✓ Analysis complete!');
-                    // Update dance level from server response if provided
-                    if (result.danceLevel !== undefined) {
-                        setDanceLevel(result.danceLevel);
+                    // Update dance level from probability value
+                    if (result.probability !== undefined) {
+                        setDanceLevel(result.probability);
+                    }
+                    
+                    // Start next recording after receiving response
+                    setIsProcessing(false);
+                    setTimeout(() => setUploadStatus(''), 3000);
+                    
+                    // Schedule next chunk capture after response
+                    if (isRecording) {
+                        setTimeout(() => {
+                            if (streamRef.current && streamRef.current.active) {
+                                captureChunk();
+                            }
+                        }, 10000);
                     }
                 } else {
                     setUploadStatus('✗ Upload failed');
+                    setIsProcessing(false);
+                    setTimeout(() => setUploadStatus(''), 3000);
                 }
             } catch (error) {
                 console.error('Upload error:', error);
                 setUploadStatus('✗ Error: ' + error.message);
+                setIsProcessing(false);
+                setTimeout(() => setUploadStatus(''), 3000);
             }
-            
-            setIsProcessing(false);
-            setTimeout(() => setUploadStatus(''), 3000);
         };
 
         mediaRecorder.start();
@@ -131,7 +144,6 @@ export default function DancingCat() {
             visualize();
             
             captureChunk();
-            intervalRef.current = setInterval(captureChunk, 10000);
         } catch (error) {
             console.error('Error accessing microphone:', error);
             setUploadStatus('✗ Microphone access denied');
@@ -139,7 +151,6 @@ export default function DancingCat() {
     };
 
     const stopRecording = () => {
-        clearInterval(intervalRef.current);
         if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
         if (audioContextRef.current) audioContextRef.current.close();
@@ -285,12 +296,6 @@ export default function DancingCat() {
                                         >
                                             {uploadStatus}
                                         </Typography>
-                                    )}
-
-                                    {currentClip && (
-                                        <Box sx={{ mt: 1, width: '100%' }}>
-                                            <audio controls src={currentClip} style={{ width: '100%' }} />
-                                        </Box>
                                     )}
                                 </Stack>
 
