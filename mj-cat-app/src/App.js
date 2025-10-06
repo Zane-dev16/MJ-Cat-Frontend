@@ -36,7 +36,7 @@ export default function DancingCat() {
     const animationRef = useRef(null);
     const progressIntervalRef = useRef(null);
     
-    const ENDPOINT_URL = 'http://127.0.0.1:8000/predict';
+    const ENDPOINT_URL = 'https://irellzane-mj-cat.hf.space/predict';
 
     useEffect(() => {
         return () => {
